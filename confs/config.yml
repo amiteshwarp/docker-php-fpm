@@ -1,0 +1,16 @@
+sites:
+    - map: php73.localhost
+      to: /var/www/web
+      php: "7.3"
+    - map: php74.localhost
+      to: /var/www/web
+      php: "7.4"
+    - map: php81.localhost
+      to: /var/www/web
+      php: "8.1"
+    - map: php82.localhost
+      to: /var/www/web
+      php: "8.2"
+    - map: php83.localhost
+      to: /var/www/web
+      php: "8.3"

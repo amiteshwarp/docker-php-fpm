@@ -1,0 +1,95 @@
+  services:
+    
+    nginx:
+      container_name: nginx
+      image: nginx:alpine
+      volumes:
+       - .:/var/www/web:ro
+       - ./confs/config.yml:/config.yml
+       - ./confs/sample.xconf:/sample.xconf
+       - ./confs/custom-entrypoint.sh:/custom-entrypoint.sh
+      entrypoint: ["/custom-entrypoint.sh"]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nginx-router.rule=HostRegexp(`{subdomain:(.*)}.localhost`)"
+        - "traefik.http.routers.nginx-router.service=nginx-service"
+        - "traefik.http.services.nginx-service.loadbalancer.server.port=80"
+    
+    php73:
+      container_name: fpm7.3
+      image: php-fpm-alp:7.3
+      build:
+        context: .
+        args:
+          - PHP_VER=7.3
+      volumes:
+       - .:/var/www/web
+    
+    php74:
+      container_name: fpm7.4
+      image: php-fpm-alp:7.4
+      build:
+        context: .
+        args:
+          - PHP_VER=7.4
+      volumes:
+       - .:/var/www/web
+    
+    php81:
+      container_name: fpm8.1
+      image: php-fpm-alp:8.1
+      build:
+        context: .
+        args:
+          - PHP_VER=8.1
+      volumes:
+       - .:/var/www/web
+    
+    php82:
+      container_name: fpm8.2
+      image: php-fpm-alp:8.2
+      build:
+        context: .
+        args:
+          - PHP_VER=8.2
+      volumes:
+       - .:/var/www/web
+    
+    php83:
+      container_name: fpm8.3
+      image: php-fpm-alp:8.3
+      build:
+        context: .
+        args:
+          - PHP_VER=8.3
+      volumes:
+       - .:/var/www/web
+    
+    mysql58:
+      container_name: mysql
+      restart: always
+      platform: linux/amd64
+      image: mysql:5.7.38
+      volumes:
+        - mysql58:/var/lib/mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_PASSWORD: root
+        MYSQL_DATABASE: web
+        MYSQL_USER: web
+      ports:
+        - "3306:3306"
+    traefik:
+      container_name: traefik
+      image: traefik:v2.10
+      ports:
+        - "81:80"
+        - "8081:8080"
+      command:
+        - "--api.insecure=true"
+        - "--providers.docker=true"
+        - "--providers.docker.exposedbydefault=false"
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+  volumes:
+    mysql58:
