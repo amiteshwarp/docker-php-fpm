@@ -34,6 +34,7 @@ RUN apk add \
 RUN apk add --no-cache --virtual build-dependencies linux-headers
 
 RUN docker-php-ext-install -j$(nproc) \
+        mysqli \
         gd \
         pdo \
         pdo_pgsql \
