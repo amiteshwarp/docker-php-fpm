@@ -1,0 +1,17 @@
+services:
+
+  nginx:
+    depends_on:
+      - php83
+    volumes:
+      - ../d11:/var/www/web/d11
+
+  php83:
+    container_name: fpm8.3
+    image: php-fpm-alp:8.3
+    build:
+      context: .
+      args:
+        - PHP_VER=8.3
+    volumes:
+      - ../d11:/var/www/web/d11

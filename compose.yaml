@@ -1,95 +1,78 @@
-  services:
-    
-    nginx:
-      container_name: nginx
-      image: nginx:alpine
-      volumes:
-       - .:/var/www/web:ro
-       - ./confs/config.yml:/config.yml
-       - ./confs/sample.xconf:/sample.xconf
-       - ./confs/custom-entrypoint.sh:/custom-entrypoint.sh
-      entrypoint: ["/custom-entrypoint.sh"]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.nginx-router.rule=HostRegexp(`{subdomain:(.*)}.localhost`)"
-        - "traefik.http.routers.nginx-router.service=nginx-service"
-        - "traefik.http.services.nginx-service.loadbalancer.server.port=80"
-    
-    php73:
-      container_name: fpm7.3
-      image: php-fpm-alp:7.3
-      build:
-        context: .
-        args:
-          - PHP_VER=7.3
-      volumes:
-       - .:/var/www/web
-    
-    php74:
-      container_name: fpm7.4
-      image: php-fpm-alp:7.4
-      build:
-        context: .
-        args:
-          - PHP_VER=7.4
-      volumes:
-       - .:/var/www/web
-    
-    php81:
-      container_name: fpm8.1
-      image: php-fpm-alp:8.1
-      build:
-        context: .
-        args:
-          - PHP_VER=8.1
-      volumes:
-       - .:/var/www/web
-    
-    php82:
-      container_name: fpm8.2
-      image: php-fpm-alp:8.2
-      build:
-        context: .
-        args:
-          - PHP_VER=8.2
-      volumes:
-       - .:/var/www/web
-    
-    php83:
-      container_name: fpm8.3
-      image: php-fpm-alp:8.3
-      build:
-        context: .
-        args:
-          - PHP_VER=8.3
-      volumes:
-       - .:/var/www/web
-    
-    mysql58:
-      container_name: mysql
-      restart: always
-      platform: linux/amd64
-      image: mysql:5.7.38
-      volumes:
-        - mysql58:/var/lib/mysql
-      environment:
-        MYSQL_ROOT_PASSWORD: root
-        MYSQL_PASSWORD: root
-        MYSQL_DATABASE: web
-        MYSQL_USER: web
+  services:    
+    mysql8:
+      image: mysql:8.0.39
+      container_name: mysql8
+      hostname: mysql.localhost
       ports:
-        - "3306:3306"
+        - 3306
+      environment:
+        - MYSQL_ALLOW_EMPTY_PASSWORD=1
+        - MYSQL_ROOT_PASSWORD=root
+      volumes:
+        - dbdata:/var/lib/mysql
+      healthcheck:
+        test: ["CMD-SHELL", "exit | mysql -h localhost -P 3306 -u root -p$$MYSQL_ROOT_PASSWORD" ]
+        interval: 5s
+        timeout: 20s
+        retries: 30
+
+    mailhog:
+      image: mailhog/mailhog:v1.0.1
+      container_name: email-server
+      hostname: email.localhost
+      ports:
+        - 1025
+        - 8025
+
     traefik:
       container_name: traefik
       image: traefik:v2.10
       ports:
-        - "81:80"
-        - "8081:8080"
+        - "80:80"
+        - "8080:8080"
       command:
         - "--api.insecure=true"
         - "--providers.docker=true"
         - "--providers.docker.exposedbydefault=false"
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
+    
+    nginx:
+      container_name: nginx
+      image: nginx:alpine
+      volumes:
+       - ./confs/config.yml:/config.yml
+       - ./confs/sample.xconf:/sample.xconf
+       - ./confs/custom-entrypoint.sh:/custom-entrypoint.sh
+      restart: unless-stopped
+      entrypoint: ["/custom-entrypoint.sh"]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nginx-router.rule=HostRegexp(`{subdomain:(.*)}.localhost`)"
+        - "traefik.http.routers.nginx-router.service=nginx-service"
+        - "traefik.http.services.nginx-service.loadbalancer.server.port=80"
+      links:
+        - mysql8
+      depends_on:
+        - mysql8
+    
+    phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      container_name: pma
+      links:
+        - mysql8
+      environment:
+        PMA_HOST: mysql8
+        PMA_PORT: 3306
+        PMA_ARBITRARY: 1
+      restart: always
+      ports:
+         - 80
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.pma-router.tls=true"
+        - "traefik.http.routers.pma-router.rule=Host(phpmyadmin.local)"
+        - "traefik.http.routers.pma-router.service=pma-service"
+        - "traefik.http.services.pma-service.loadbalancer.server.port=80"
   volumes:
-    mysql58:
+    dbdata:

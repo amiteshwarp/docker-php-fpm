@@ -28,7 +28,8 @@ RUN apk add \
     autoconf \
     g++ \
     make \
-    gmp-dev
+    gmp-dev \
+    wget
 
 RUN apk add --no-cache --virtual build-dependencies linux-headers
 
@@ -36,6 +37,7 @@ RUN docker-php-ext-install -j$(nproc) \
         gd \
         pdo \
         pdo_pgsql \
+        pdo_mysql \
         zip \
         bcmath \
         opcache \
@@ -49,14 +51,15 @@ RUN docker-php-ext-install -j$(nproc) \
         gmp \
         pcntl
 
-RUN pecl install redis
-RUN docker-php-ext-enable redis
+RUN pecl install redis \
+    && docker-php-ext-enable redis
 
 # Use the default development configuration
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+COPY ./confs/user.ini /usr/local/etc/php/conf.d/user.ini
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
